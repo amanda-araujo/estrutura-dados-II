@@ -17,10 +17,6 @@ typedef struct{
     int v_j;
 } PAR;
 
-/* typedef struct{
-    PAR *inicio;
-} LISTA_PARES; */
-
 // Protótipo de funções
 void dijsktra(int G, int n);
 void floyd_warshall(int **G, int n);
