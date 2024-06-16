@@ -34,25 +34,21 @@ int main()
     scanf("%d %d", &N, &M);
 
     // Estrutura grafo: matriz de adjacências
-    // alocação vetor ponteiros para linhas
-    int **G = (int **) malloc(N * sizeof(int *));
-
-    // alocação cada uma das linhas
-    for (int i = 0; i < N; i++){
+    int **G = (int **) malloc(N * sizeof(int *)); // alocação vetor ponteiros para linhas
+    for (int i = 0; i < N; i++){                  // alocação cada uma das linhas
         G[i] = (int *) malloc(N * sizeof(int)); 
     } 
 
-    // Inicializar grafo
+    // Inicialização grafo
     for (int i = 0; i < N; i++){
         for (int j = 0; j < N; j++){
             G[i][j] = 0;
         }
     }
 
-    // Leitura grafo: matriz de adjacências (arestas (v_i, v_j) e custo (w))
-    int v_i, v_j, w;
-    for (int i = 0; i < M; i++)
-    {
+    // Leitura grafo: matriz de adjacências (arestas (v_i, v_j, w))
+    int v_i, v_j, w; // vértice origem, vértice destino, custo
+    for (int i = 0; i < M; i++){
         scanf("%d %d %d", &v_i, &v_j, &w);
         G[v_i][v_j] = w;    // adicionar no grafo
     }
@@ -98,18 +94,15 @@ int main()
         // Floyd-Warshall: custo caminhos mínimos todos para todos
         
         // Matriz A: custo caminho mínimos
-        // alocação vetor ponteiros para linhas
-        int **A = (int **) malloc(N * sizeof(int *));
-
-        // alocação cada uma das linhas
-        for (int i = 0; i < N; i++){
+        int **A = (int **) malloc(N * sizeof(int *)); // alocação vetor ponteiros para linhas
+        for (int i = 0; i < N; i++){                  // alocação cada uma das linhas
             A[i] = (int *) malloc(N * sizeof(int)); 
         }
 
         // Inicialização da matriz de custos A(0): custo inicial
         for (int u = 0; u < N; u++){
             for (int v = 0; v < N; v++){
-                if (u == v) A[u][v] = 0;        // diagonal nula (sem custo autoloop)
+                if (u == v) A[u][v] = 0;                  // diagonal nula (sem custo autoloop)
                 else if (G[u][v] == 0) A[u][v] = INT_MAX; // custo infinito: não há aresta (u, v) 
                 else A[u][v] = G[u][v];                   // peso aresta (u, v)                
             }
@@ -120,25 +113,22 @@ int main()
 
         // Custo dos caminhos
         for (int i = 0; i < K; i++){
-            v_i = lista_pares[i].v_i;
-            v_j = lista_pares[i].v_j;
+            v_i = lista_pares[i].v_i; // vértice origem
+            v_j = lista_pares[i].v_j; // vértice destino
             if (A[v_i][v_j] != INT_MAX) printf("%d\n", A[v_i][v_j]);
             else printf("-1\n");  
         }
 
-        // Liberação de memória
-        // libera memória da matriz A
+        // Liberação de memória alocada
         for (int i = 0; i < N; i++) free(A[i]);
         free (A);
     }
 
     else printf("T inválido!\n");
 
-    // Liberação de memória alocada
-    // libera memória do grafo 
+    // Liberação de memória alocada 
     for (int i = 0; i < N; i++) free(G[i]);
     free (G);
-    // libera memória lista de pares 
     free(lista_pares);
     
     return 0;
@@ -233,37 +223,3 @@ int * dijsktra(int **G, int N, int v_inicial){
 
     return d;
 }
-
-// RASCUNHO ----------------------------------------------------------------
-// Dijkstra
-/* // Vetor solução
-    int c = 0;
-    int *sol = (int *) malloc(N * sizeof(int));
-
-// Inicializar solução (vazia)
-    for (v = 0; v < N; v++) sol[v] = -1; */
-// pegar u:
-//sol[c] = u;        // adiciona u no conjunto solção
-//c++;               // atualiza contador conj solução
-/*Check para saber se ainda existe aberto
-    /* bool fila = false; // true: ainda há vértices | false: todos os vértices já foram
-    for (v = 0; v < N; v++){
-        if (aberto[v] == true) fila = true;
-    } */
-/*// Check se ainda há fila (se existe aberto)
-        fila = false;
-        for (v = 0; v < N; v++){
-            if (aberto[v] == true) fila = true;
-        } */
-// ou: pegar sempre vértice de menor custo d[v] que NÃO está em sol
-    // Criação fila de prioridade dos vértices (v_inicial primeiro)
-    // F: heap
-    // rearranjar-heap
-
-    // Inserção vértice inicial na solução
-    //sol[0] = v_inicial;
-
-    // Relaxamento arestas adjacentes 
-    //while (F =! NULL){
-        // u = retira vértice de F
-        // S
