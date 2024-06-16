@@ -11,6 +11,10 @@
 #include <malloc.h>
 #include <limits.h>
 
+#define false 0
+#define true 1
+typedef int bool;
+
 // Definição estruturas
 typedef struct{ 
     int v_i;
@@ -18,7 +22,7 @@ typedef struct{
 } PAR;
 
 // Protótipo de funções
-void dijsktra(int G, int n);
+int *dijsktra(int **G, int n, int v_inicial);
 void floyd_warshall(int **G, int n);
 void inicializar(PAR *lista_pares, int K);
 
@@ -31,11 +35,11 @@ int main()
 
     // Estrutura grafo: matriz de adjacências
     // alocação vetor ponteiros para linhas
-    int **G = malloc(N * sizeof(int*));
+    int **G = (int **) malloc(N * sizeof(int *));
 
     // alocação cada uma das linhas
     for (int i = 0; i < N; i++){
-        G[i] = malloc(N * sizeof(int)); 
+        G[i] = (int *) malloc(N * sizeof(int)); 
     } 
 
     // Inicializar grafo
@@ -66,28 +70,41 @@ int main()
     // Leitura: vértices caminhos 
     for (int i = 0; i < K; i++){
         scanf("%d %d", &v_i, &v_j); // armazenamento caminhos
-        lista_pares[i].v_i = v_i;
-        lista_pares[i].v_j = v_j;
+        lista_pares[i].v_i = v_i;   // vértice origem
+        lista_pares[i].v_j = v_j;   // vértice destino
     }
 
-    // Matriz A: custo caminho mínimos todos para todos
-    // alocação vetor ponteiros para linhas
-    int **A = malloc(N * sizeof(int*));
+    // Algoritmos caminhos mínimos
+    // "Switch case" (comando switch não permite declaração dentro de cada case!)
+    if (T == 1){
+        // Dijkstra: custo caminho mínimo origem para todos
 
-    // alocação cada uma das linhas
-    for (int i = 0; i < N; i++){
-        A[i] = malloc(N * sizeof(int)); 
-    } 
+        // Custo dos caminhos
+        for (int i = 0; i < K; i++){
+            // Par (v_i, v_j)
+            v_i = lista_pares[i].v_i; // vértice origem
+            v_j = lista_pares[i].v_j; // vértice destino
+            
+            // Algoritmo de Dijkstra
+            int *d = dijsktra(G, N, v_i);
 
-    switch (T)
-    {
-    case 1:
-        //dijsktra(G, N);
-        // um para todos
+            // Custo do caminho (v_i, v_j)
+            if (d[v_j] != INT_MAX) printf("%d\n", d[v_j]);
+            else printf("-1\n");  
+        }        
+    }
 
-        break;
+    else if (T == 2){
+        // Floyd-Warshall: custo caminhos mínimos todos para todos
+        
+        // Matriz A: custo caminho mínimos
+        // alocação vetor ponteiros para linhas
+        int **A = (int **) malloc(N * sizeof(int *));
 
-    case 2:
+        // alocação cada uma das linhas
+        for (int i = 0; i < N; i++){
+            A[i] = (int *) malloc(N * sizeof(int)); 
+        }
 
         // Inicialização da matriz de custos A(0): custo inicial
         for (int u = 0; u < N; u++){
@@ -109,14 +126,19 @@ int main()
             else printf("-1\n");  
         }
 
-        break;
-    
-    default:
-        break;
+        // Liberação de memória
+        // libera memória da matriz A
+        for (int i = 0; i < N; i++) free(A[i]);
+        free (A);
     }
 
+    else printf("T inválido!\n");
+
     // Liberação de memória alocada
-    free(G);
+    // libera memória do grafo 
+    for (int i = 0; i < N; i++) free(G[i]);
+    free (G);
+    // libera memória lista de pares 
     free(lista_pares);
     
     return 0;
@@ -130,6 +152,8 @@ void inicializar(PAR *lista_pares, int K){
         lista_pares[i].v_i = -1;
         lista_pares[i].v_j = -1;
     }
+
+    return;
 }
 
 // Algoritmo Floyd-Warshall
@@ -153,25 +177,85 @@ void floyd_warshall(int **A, int n){
 }
 
 // Algoritmo de Dijkstra
-// relaxamento
-void relax(int u, int v, int w){
-    if (d[v] > d[u] + W[u][v]) d[v] = d[u] + W[u][v]; 
-}
-
-void dijsktra(int **G, int N, int v_inicial){
-    
-    // Vetor de custo do caminho
-    int *d = (int) malloc(N * sizeof(int)); 
-
-    // Inicialização custo caminho (v_inicial = 0)
-    for (int i = 0; i < N; i++){
-        if (i == v_inicial) d[i] = 0;
-        else d[i] = INT_MAX;
+void relax(int **G, int *d, int N, int u){
+    // relaxamento arestas adjacentes a u
+    for (int v = 0; v < N; v++){
+        if (G[u][v] != 0 && d[u] != INT_MAX && d[v] > d[u] + G[u][v]){
+            d[v] = d[u] + G[u][v];
+        } 
     }
 
-    // Vetor solução
-    int *sol = (int) malloc(N * sizeof(int));
+    return;
+}
 
+int * dijsktra(int **G, int N, int v_inicial){
+    // output: Retorna vetor de distâncias
+    int v;
+
+    // Vetor de distâncias
+    int *d = (int *) malloc(N * sizeof(int)); 
+
+    // Inicialização custo caminho (v_inicial = 0, outros: infinito)
+    for (v = 0; v < N; v++){
+        if (v == v_inicial) d[v] = 0;
+        else d[v] = INT_MAX;
+    }
+
+    // Vetor aberto ("fila", nós que ainda não estão na solução)
+    bool *aberto = (bool *) malloc(N * sizeof(bool));
+
+    // Inicialização vetor aberto (todos vértices em aberto)
+    for (v = 0; v < N; v++) aberto[v] = true;
+
+    while (true){ // fila
+        
+        // Vértice prioritário na "fila": vértice de menor custo em d que não está em sol
+        int custo_min = INT_MAX;
+        int u = -1;
+        for (int i = 0; i < N; i++){
+            if (aberto[i] == true && d[i] < custo_min){
+                custo_min = d[i];
+                u = i;
+            }
+        }
+
+        if (u == -1) break; // se não encontrou vértice válido, sai do loop
+
+        aberto[u] = false; // retira da "fila" (fecha u)
+
+        // Relaxamento arestas de u
+        relax(G, d, N, u);
+ 
+    }
+
+    // Liberação de memória
+    free(aberto);
+
+    return d;
+}
+
+// RASCUNHO ----------------------------------------------------------------
+// Dijkstra
+/* // Vetor solução
+    int c = 0;
+    int *sol = (int *) malloc(N * sizeof(int));
+
+// Inicializar solução (vazia)
+    for (v = 0; v < N; v++) sol[v] = -1; */
+// pegar u:
+//sol[c] = u;        // adiciona u no conjunto solção
+//c++;               // atualiza contador conj solução
+/*Check para saber se ainda existe aberto
+    /* bool fila = false; // true: ainda há vértices | false: todos os vértices já foram
+    for (v = 0; v < N; v++){
+        if (aberto[v] == true) fila = true;
+    } */
+/*// Check se ainda há fila (se existe aberto)
+        fila = false;
+        for (v = 0; v < N; v++){
+            if (aberto[v] == true) fila = true;
+        } */
+// ou: pegar sempre vértice de menor custo d[v] que NÃO está em sol
     // Criação fila de prioridade dos vértices (v_inicial primeiro)
     // F: heap
     // rearranjar-heap
@@ -183,9 +267,3 @@ void dijsktra(int **G, int N, int v_inicial){
     //while (F =! NULL){
         // u = retira vértice de F
         // S
-    }
-
-
-
-
-}
